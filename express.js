@@ -98,7 +98,7 @@ let readData = async (characteristic) => {
     }
 
     // 打印接收到的 6 个传感器值
-    console.log(`Acceleration: x=${sensorValues[0]}, y=${sensorValues[1]}, z=${sensorValues[2]} | Gyroscope: x=${sensorValues[3]}, y=${sensorValues[4]}, z=${sensorValues[5]}`);
+    // console.log(`Acceleration: x=${sensorValues[0]}, y=${sensorValues[1]}, z=${sensorValues[2]} | Gyroscope: x=${sensorValues[3]}, y=${sensorValues[4]}, z=${sensorValues[5]}`);
 
     // 每 10 毫秒继续读取数据
     setTimeout(() => {

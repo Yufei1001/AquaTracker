@@ -138,6 +138,74 @@
         }
 
 
+
+
+
+        let currentState = "initial";
+        let stableStartTime = null;
+        const stableDurationThreshold = 1000; // 1s
+
+        function detectDrinkingBehavior(angle) {
+            const currentTime = Date.now();
+
+            switch (currentState) {
+                case "initial":
+                    if (angle > -70 && angle < -40) {   // 范围尽量宽一些，不能错过
+                        currentState = "start tilting";
+                        console.log("start tilting");
+                    }
+                    break;
+
+                case "start tilting":
+                    if (angle >= -60 && angle < -10) {      // 慢慢地变到更小的角度，再开始计时
+                        currentState = "start tilting";
+                        // stableStartTime = currentTime;
+                        console.log("start tilting ----->");
+                    }
+                    if (angle >= -50 && angle < -1) {
+                        currentState = "keep tilting";
+                        stableStartTime = currentTime;
+                        console.log("keep tilting");
+                    }
+                    else {
+                        currentState = "initial";
+                        console.log("-----initial-----");
+                    }
+                    break;
+
+                case "keep tilting":
+                    if (angle > -50 && angle < -1) {
+                        if (currentTime - stableStartTime > stableDurationThreshold) {
+                            console.log("Detected drinking behavior!");
+                            currentState="drink";
+                        }
+                    } else {
+                        currentState = "initial";
+                        console.log("back to -----initial-----");
+                        
+                    }
+                    break;
+                
+                case "drink":
+                    if (angle > -50 && angle < -1) {
+                        currentState="drink";
+                        console.log("Continue drinking!");
+                    } else {
+                        currentState = "initial";
+                        console.log("stop drinking, back to -----initial-----");
+                    }
+                    break;
+                
+                
+               
+                default:
+                    currentState = "initial";
+            }
+        }
+
+
+
+
         // 获取传感器数据的函数
         function getData() {
             fetch(SERVERADDRESS, {
@@ -189,6 +257,7 @@
                     angleData.shift();
                 }
                 angleData.push(calculatedAngle);
+                detectDrinkingBehavior(calculatedAngle);
 
 
 
