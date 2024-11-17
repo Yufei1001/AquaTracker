@@ -1,170 +1,3 @@
-<!-- <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>IMU Sensor Visualization</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <style>
-        .line {
-            fill: none;
-            stroke-width: 2px;
-        }
-        .axis path,
-        .axis line {
-            fill: none;
-            stroke: #000;
-            shape-rendering: crispEdges;
-        }
-        .axis-label {
-            font-size: 16px;
-            fill: #000;
-        }
-        body, html {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-        }
-    </style>
-</head>
-<body>
-    <h1 style="text-align:center">IMU Visualization</h1>
-    <div style="text-align:center">Current Sensor Values: <span id="sensorValues">Loading...</span></div>
-
-    <svg id="accelerationChart"></svg>
-    <svg id="gyroscopeChart"></svg>
-
-    <script type="application/javascript">
-        const SERVERADDRESS = "http://127.0.0.1:3000/data";
-        const margin = { top: 60, right: 60, bottom: 80, left: 80 };
-        const width = window.innerWidth - margin.left - margin.right;
-        const height = (window.innerHeight - margin.top - margin.bottom) / 2 - 50;
-
-        // 初始化加速度和陀螺仪数据
-        let accelerationData = { x: [], y: [], z: [] };
-        let gyroscopeData = { x: [], y: [], z: [] };
-
-        // 创建 x 和 y 轴的比例尺
-        const xScale = d3.scaleLinear().domain([0, 50]).range([0, width]);
-        const yScale = d3.scaleLinear().domain([-200, 200]).range([height, 0]);
-
-        // 创建 SVG 容器并添加组元素
-        const createChart = (id) => {
-            const svg = d3.select(id)
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-              .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
-
-            // 创建 x 和 y 轴
-            svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(xScale));
-
-            svg.append("g")
-                .attr("class", "y axis")
-                .call(d3.axisLeft(yScale));
-
-            return svg;
-        };
-
-        const accelerationSvg = createChart("#accelerationChart");
-        const gyroscopeSvg = createChart("#gyroscopeChart");
-
-        // // 创建折线生成器
-        // const lineGenerator = (key) => d3.line()   // 返回一个折线生成器：根据输入的数据生成 SVG <path> 元素的 d 属性值（路径字符串），d属性值用来绘制path。
-        //     .x((d, i) => xScale(i))
-        //     .y(d => yScale(d[key]))
-        //     .curve(d3.curveBasis);
-
-        // 创建折线生成器
-        const lineGenerator = (key) => d3.line()   // 返回一个折线生成器：根据输入的数据生成 SVG <path> 元素的 d 属性值（路径字符串），d属性值用来绘制path。
-            .x((d, i) => xScale(i))
-            .y(d => yScale(d))
-            .curve(d3.curveBasis);
-
-
-        // 初始化路径元素
-        const initPath = (svg, color) => svg.append("path")
-            .datum([])
-            .attr("class", "line")
-            .attr("stroke", color);
-
-        const paths = {
-            acceleration: {
-                x: initPath(accelerationSvg, "red"),
-                y: initPath(accelerationSvg, "green"),
-                z: initPath(accelerationSvg, "blue")
-            },
-            gyroscope: {
-                x: initPath(gyroscopeSvg, "red"),
-                y: initPath(gyroscopeSvg, "green"),
-                z: initPath(gyroscopeSvg, "blue")
-            }
-        };
-
-        // let accelerationData = { x: [], y: [], z: [] };
-        // let gyroscopeData = { x: [], y: [], z: [] };
-
-        // 更新折线图函数
-        function updateChart(data, paths, svg) {   //传入accelerationData, paths.acceleration, accelerationSvg
-            Object.keys(data).forEach(key => {
-                paths[key].datum(data[key])
-                    .attr("d", lineGenerator(key));  // lingGenerator 使用accelerationData[key]作为输入，生成“d”，d会生成Xpath
-            });
-        }
-
-        // 获取传感器数据的函数
-        function getData() {
-            fetch(SERVERADDRESS, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(dataResponse => {
-                const sensorValues = dataResponse.sensorValues;
-                document.getElementById('sensorValues').innerText = sensorValues.join(", ");
-
-                // 更新加速度数据
-                if (accelerationData.x.length >= 50) {
-                    accelerationData.x.shift();
-                    accelerationData.y.shift();
-                    accelerationData.z.shift();
-                }
-                accelerationData.x.push(sensorValues[0]);
-                accelerationData.y.push(sensorValues[1]);
-                accelerationData.z.push(sensorValues[2]);
-
-                // 更新陀螺仪数据
-                if (gyroscopeData.x.length >= 50) {
-                    gyroscopeData.x.shift();
-                    gyroscopeData.y.shift();
-                    gyroscopeData.z.shift();
-                }
-                gyroscopeData.x.push(sensorValues[3]);
-                gyroscopeData.y.push(sensorValues[4]);
-                gyroscopeData.z.push(sensorValues[5]);
-
-                // 更新折线图
-                updateChart(accelerationData, paths.acceleration, accelerationSvg);
-                updateChart(gyroscopeData, paths.gyroscope, gyroscopeSvg);
-            })
-            .catch(error => {
-                console.error('Error fetching data:', error);
-            });
-        }
-
-        // 每秒获取一次数据
-        setInterval(getData, 100);
-    </script>
-</body>
-</html> -->
-
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -207,10 +40,11 @@
 
     <svg id="accelerationChart"></svg>
     <svg id="gyroscopeChart"></svg>
+    <svg id="angleChart"></svg>
 
     <script type="application/javascript">
         const SERVERADDRESS = "http://127.0.0.1:3000/data";
-        const margin = { top: 60, right: 60, bottom: 80, left: 80 };
+        const margin = { top: 60, right: 60, bottom: 20, left: 80 };
         // const width = window.innerWidth - margin.left - margin.right;
         // const height = (window.innerHeight - margin.top - margin.bottom) / 2 - 50;
         const width = 600; 
@@ -219,12 +53,14 @@
         // 初始化加速度和陀螺仪数据
         let accelerationData = { x: [], y: [], z: [] };
         let gyroscopeData = { x: [], y: [], z: [] };
+        let angleData = [];
 
         // 创建 x 和 y 轴的比例尺
         const xScale = d3.scaleLinear().domain([0, 50]).range([0, width]);
         // const yScale = d3.scaleLinear().domain([-200, 200]).range([height, 0]);
         const yScaleAcceleration = d3.scaleLinear().domain([-5, 5]).range([height, 0]);
         const yScaleGyroscope = d3.scaleLinear().domain([-300, 300]).range([height, 0]);
+        const yScaleAngle = d3.scaleLinear().domain([-90, 90]).range([height, 0]);
 
 
         const createChart = (id, yScale) => {
@@ -250,7 +86,7 @@
 
         const accelerationSvg = createChart("#accelerationChart", yScaleAcceleration);
         const gyroscopeSvg = createChart("#gyroscopeChart", yScaleGyroscope);
-
+        const angleSvg = createChart("#angleChart", yScaleAngle);
 
 
         // 创建折线生成器
@@ -277,7 +113,8 @@
                 x: initPath(gyroscopeSvg, "red"),
                 y: initPath(gyroscopeSvg, "blue"),
                 z: initPath(gyroscopeSvg, "green")
-            }
+            },
+            angle: initPath(angleSvg, "red")
         };
 
         // let accelerationData = { x: [], y: [], z: [] };
@@ -289,6 +126,15 @@
                 paths[key].datum(data[key])
                     .attr("d", lineGenerator(key, yScale));
             });
+        }
+
+        function updateAngleChart(data, path, svg, yScale) {
+            path.datum(data)
+                .attr("d", d3.line()
+                    .x((d, i) => xScale(i))
+                    .y(d => yScale(d))
+                    .curve(d3.curveBasis)
+                );
         }
 
 
@@ -339,7 +185,10 @@
                 // 更新页面显示
                 document.getElementById('calculatedAngle').innerText = calculatedAngle.toFixed(2) + " degrees";
 
-
+                if (angleData.length >= 50) {
+                    angleData.shift();
+                }
+                angleData.push(calculatedAngle);
 
 
 
@@ -348,7 +197,7 @@
                 // 更新折线图
                 updateChart(accelerationData, paths.acceleration, accelerationSvg, yScaleAcceleration);
                 updateChart(gyroscopeData, paths.gyroscope, gyroscopeSvg, yScaleGyroscope);
-
+                updateAngleChart(angleData, paths.angle, angleSvg, yScaleAngle);
             })
             .catch(error => {
                 console.error('Error fetching data:', error);
