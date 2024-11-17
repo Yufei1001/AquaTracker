@@ -144,8 +144,61 @@
         let currentState = "initial";
         let stableStartTime = null;
         const stableDurationThreshold = 1000; // 1s
+        let drinkStartIndex = null;
+        const colorDrinkBackground = "rgba(173, 216, 230, 0.3)";
 
-        function detectDrinkingBehavior(angle) {
+
+        // 创建背景区域
+        const createBackgroundArea = (svg) => svg.append("rect")
+            .attr("class", "background-area")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", 0)
+            .attr("height", height)
+            .style("fill", colorDrinkBackground)
+            .style("opacity", 0);
+
+        // 初始化背景区域
+        const drinkBackgrounds = {
+            acceleration: createBackgroundArea(accelerationSvg),
+            gyroscope: createBackgroundArea(gyroscopeSvg),
+            angle: createBackgroundArea(angleSvg),
+        };
+
+        function updateBackgroundArea(path, startIndex, endIndex) {
+            // 检查 startIndex 和 endIndex 是否为有效数值
+            if (typeof startIndex === 'number' && typeof endIndex === 'number' && !isNaN(startIndex) && !isNaN(endIndex)) {
+                const startX = xScale(startIndex);
+                const endX = xScale(endIndex);
+
+                // 检查 startX 和 endX 是否为有效数值
+                if (!isNaN(startX) && !isNaN(endX)) {
+                    path.attr("x", startX)
+                        .attr("width", Math.max(0, endX - startX))
+                        .style("opacity", 1);
+                } else {
+                    console.warn("Invalid startX or endX:", startX, endX);
+                    path.style("opacity", 0);
+                }
+            } else {
+                console.warn("Invalid startIndex or endIndex:", startIndex, endIndex);
+                path.style("opacity", 0);
+            }
+        }
+
+
+        // 重置背景区域
+        function resetBackgroundArea() {
+            Object.values(drinkBackgrounds).forEach(path => {
+                path.style("opacity", 0);
+            });
+        }
+
+
+
+
+        
+        function detectDrinkingBehavior(angle, currentIndex) {
             const currentTime = Date.now();
 
             switch (currentState) {
@@ -178,10 +231,12 @@
                         if (currentTime - stableStartTime > stableDurationThreshold) {
                             console.log("Detected drinking behavior!");
                             currentState="drink";
+                            drinkStartIndex = currentIndex;
                         }
                     } else {
                         currentState = "initial";
                         console.log("back to -----initial-----");
+                        resetBackgroundArea();
                         
                     }
                     break;
@@ -190,9 +245,18 @@
                     if (angle > -50 && angle < -1) {
                         currentState="drink";
                         console.log("Continue drinking!");
+                        drinkStartIndex = Math.max(drinkStartIndex - 1, 0);
+                        // console.log(drinkStartIndex);
+                        // console.log(currentIndex);
+                        // console.log("---------------------");
+                        updateBackgroundArea(drinkBackgrounds.acceleration, drinkStartIndex, currentIndex);
+                        updateBackgroundArea(drinkBackgrounds.gyroscope, drinkStartIndex, currentIndex);
+                        updateBackgroundArea(drinkBackgrounds.angle, drinkStartIndex, currentIndex);
+
                     } else {
                         currentState = "initial";
                         console.log("stop drinking, back to -----initial-----");
+                        resetBackgroundArea();
                     }
                     break;
                 
@@ -204,7 +268,7 @@
         }
 
 
-
+        let currentIndex = 0;
 
         // 获取传感器数据的函数
         function getData() {
@@ -257,7 +321,8 @@
                     angleData.shift();
                 }
                 angleData.push(calculatedAngle);
-                detectDrinkingBehavior(calculatedAngle);
+                detectDrinkingBehavior(calculatedAngle, currentIndex);
+                currentIndex = Math.min(currentIndex + 1, 49)
 
 
 
