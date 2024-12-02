@@ -58,7 +58,7 @@
         // 创建 x 和 y 轴的比例尺
         const xScale = d3.scaleLinear().domain([0, 50]).range([0, width]);
         // const yScale = d3.scaleLinear().domain([-200, 200]).range([height, 0]);
-        const yScaleAcceleration = d3.scaleLinear().domain([-5, 5]).range([height, 0]);
+        const yScaleAcceleration = d3.scaleLinear().domain([-2, 2]).range([height, 0]);
         const yScaleGyroscope = d3.scaleLinear().domain([-300, 300]).range([height, 0]);
         const yScaleAngle = d3.scaleLinear().domain([-90, 90]).range([height, 0]);
 
@@ -95,8 +95,6 @@
             .y(d => yScale(d))
             .curve(d3.curveBasis);
 
-
-
         // 初始化路径元素
         const initPath = (svg, color) => svg.append("path")
             .datum([])
@@ -117,8 +115,10 @@
             angle: initPath(angleSvg, "red")
         };
 
-        // let accelerationData = { x: [], y: [], z: [] };
-        // let gyroscopeData = { x: [], y: [], z: [] };
+
+
+
+
 
         // 更新折线图函数
         function updateChart(data, paths, svg, yScale) {
@@ -186,7 +186,6 @@
             }
         }
 
-
         // 重置背景区域
         function resetBackgroundArea() {
             Object.values(drinkBackgrounds).forEach(path => {
@@ -210,14 +209,15 @@
                     break;
 
                 case "start tilting":
-                    if (angle >= -60 && angle < -10) {      // 慢慢地变到更小的角度，再开始计时
+                    // if (angle >= -60 && angle < -10) {      // 慢慢地变到更小的角度，再开始计时
+                    if (angle >= -60 && angle < -50) { 
                         currentState = "start tilting";
-                        // stableStartTime = currentTime;
+                        // stableStartTime = currentIndex;
                         console.log("start tilting ----->");
                     }
                     if (angle >= -50 && angle < -1) {
                         currentState = "keep tilting";
-                        stableStartTime = currentTime;
+                        stableStartTime = currentIndex;
                         console.log("keep tilting");
                     }
                     else {
@@ -231,7 +231,8 @@
                         if (currentTime - stableStartTime > stableDurationThreshold) {
                             console.log("Detected drinking behavior!");
                             currentState="drink";
-                            drinkStartIndex = currentIndex;
+                            // drinkStartIndex = currentIndex;
+                            drinkStartIndex = stableStartTime;
                         }
                     } else {
                         currentState = "initial";
@@ -258,9 +259,7 @@
                         console.log("stop drinking, back to -----initial-----");
                         resetBackgroundArea();
                     }
-                    break;
-                
-                
+                    break;                
                
                 default:
                     currentState = "initial";
@@ -268,6 +267,11 @@
         }
 
 
+
+
+
+
+        
         let currentIndex = 0;
 
         // 获取传感器数据的函数
@@ -302,11 +306,6 @@
                 gyroscopeData.x.push(sensorValues[3]);
                 gyroscopeData.y.push(sensorValues[4]);
                 gyroscopeData.z.push(sensorValues[5]);
-
-
-
-
-
                 
                 // 计算新的角度值
                 const ax = sensorValues[0];
@@ -323,10 +322,6 @@
                 angleData.push(calculatedAngle);
                 detectDrinkingBehavior(calculatedAngle, currentIndex);
                 currentIndex = Math.min(currentIndex + 1, 49)
-
-
-
-
 
                 // 更新折线图
                 updateChart(accelerationData, paths.acceleration, accelerationSvg, yScaleAcceleration);
