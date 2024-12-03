@@ -41,6 +41,8 @@
     <svg id="accelerationChart"></svg>
     <svg id="gyroscopeChart"></svg>
     <svg id="angleChart"></svg>
+    <svg id="waterIntakeChart"></svg>
+
 
     <script type="application/javascript">
         const SERVERADDRESS = "http://127.0.0.1:3000/data";
@@ -114,6 +116,9 @@
             },
             angle: initPath(angleSvg, "red")
         };
+
+
+
 
 
 
@@ -204,7 +209,7 @@
                 case "initial":
                     if (angle > -70 && angle < -40) {   // 范围尽量宽一些，不能错过
                         currentState = "start tilting";
-                        console.log("start tilting");
+                        // console.log("start tilting");
                     }
                     break;
 
@@ -213,30 +218,30 @@
                     if (angle >= -60 && angle < -50) { 
                         currentState = "start tilting";
                         // stableStartTime = currentIndex;
-                        console.log("start tilting ----->");
+                        // console.log("start tilting ----->");
                     }
                     if (angle >= -50 && angle < -1) {
                         currentState = "keep tilting";
                         stableStartTime = currentIndex;
-                        console.log("keep tilting");
+                        // console.log("keep tilting");
                     }
                     else {
                         currentState = "initial";
-                        console.log("-----initial-----");
+                        // console.log("-----initial-----");
                     }
                     break;
 
                 case "keep tilting":
                     if (angle > -50 && angle < -1) {
                         if (currentTime - stableStartTime > stableDurationThreshold) {
-                            console.log("Detected drinking behavior!");
+                            // console.log("Detected drinking behavior!");
                             currentState="drink";
                             // drinkStartIndex = currentIndex;
                             drinkStartIndex = stableStartTime;
                         }
                     } else {
                         currentState = "initial";
-                        console.log("back to -----initial-----");
+                        // console.log("back to -----initial-----");
                         resetBackgroundArea();
                         
                     }
@@ -245,7 +250,7 @@
                 case "drink":
                     if (angle > -50 && angle < -1) {
                         currentState="drink";
-                        console.log("Continue drinking!");
+                        // console.log("Continue drinking!");
                         drinkStartIndex = Math.max(drinkStartIndex - 1, 0);
                         // console.log(drinkStartIndex);
                         // console.log(currentIndex);
@@ -256,7 +261,14 @@
 
                     } else {
                         currentState = "initial";
-                        console.log("stop drinking, back to -----initial-----");
+                        // console.log("stop drinking, back to -----initial-----");
+                                        // 记录喝水行为
+                        
+                        const endTime = currentTime;
+                        const amount = Math.floor(Math.random() * (500 - 10 + 1)) + 10;  // 统一设为 100ml
+                        recordWaterIntake(stableStartTime, endTime, amount);
+                        
+                        
                         resetBackgroundArea();
                     }
                     break;                
@@ -271,7 +283,7 @@
 
 
 
-        
+
         let currentIndex = 0;
 
         // 获取传感器数据的函数
@@ -335,6 +347,123 @@
 
         // 每秒获取一次数据
         setInterval(getData, 100);
+
+
+
+
+
+        // 在 JavaScript 中为条形图设置时间轴（横轴）和水量轴（纵轴）的比例尺：
+        const waterChartMargin = { top: 20, right: 30, bottom: 40, left: 50 };
+        const waterChartWidth = 600;
+        const waterChartHeight = 300;
+
+        const waterXScale = d3.scaleTime()
+            .range([0, waterChartWidth]);
+
+        const waterYScale = d3.scaleLinear()
+            .domain([0, 500]) // 假设最大水量是 500ml
+            .range([waterChartHeight, 0]);
+
+        const waterSvg = d3.select("#waterIntakeChart")
+            .attr("width", waterChartWidth + waterChartMargin.left + waterChartMargin.right)
+            .attr("height", waterChartHeight + waterChartMargin.top + waterChartMargin.bottom)
+        .append("g")
+            .attr("transform", `translate(${waterChartMargin.left},${waterChartMargin.top})`);
+
+        waterSvg.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0,${waterChartHeight})`);
+
+        waterSvg.append("g")
+            .attr("class", "y-axis");
+
+        waterSvg.append("text")
+            .attr("class", "axis-label")
+            .attr("x", -waterChartHeight / 2)
+            .attr("y", -40)
+            .attr("transform", "rotate(-90)")
+            .text("Water Intake (ml)");
+
+
+        let waterIntakeData = [];
+        let drinkingStartTime = null; // 记录喝水行为的开始时间
+
+        // 记录喝水行为数据
+        function recordWaterIntake(startTime, endTime, amount) {
+            const waterstartTime = new Date(); // 每次调用生成当前时间
+            waterIntakeData.push({
+                time: waterstartTime,
+                amount: amount
+            });
+            console.log(`Recorded drinking: ${amount}ml at ${new Date(waterstartTime).toLocaleTimeString()}`);
+            updateWaterIntakeChart();
+        }
+
+        // 更新条形图
+        function updateWaterIntakeChart() {
+            const startTime = waterIntakeData[0]?.time || new Date();
+            const endTime = new Date();
+            waterXScale.domain([startTime, endTime]);
+
+            // 动态计算条形宽度
+            // const barWidth = Math.max(1, (waterChartWidth / waterIntakeData.length) - 2);
+
+            const padding = 2; // 条形间距
+            const maxBarWidth = 5; // 设置条形的最大宽度
+            const barWidth = Math.min(maxBarWidth, Math.max(1, (waterChartWidth / waterIntakeData.length) - padding));
+
+            // 定义颜色比例尺
+            const colorScale = d3.scaleLinear()
+                .domain([0, 500]) // 假设水量范围是 0 到 500 ml
+                .range(["#d0e7ff", "#003f88"]); // 从浅蓝到深蓝
+
+
+            // 绑定数据
+            // 用于将你的数据数组 waterIntakeData 和 SVG 图形元素建立一一对应关系，并通过键函数 d => d.time 确保每条数据的唯一性。
+            // waterIntakeData = [
+            //     { time: "2024-12-02T10:00:00", amount: 100 },
+            //     { time: "2024-12-02T10:05:00", amount: 150 }
+            // ];
+            const bars = waterSvg.selectAll(".bar")
+                .data(waterIntakeData, d => d.time);
+
+            // 进入阶段
+            bars.enter()
+                .append("rect")
+                .attr("class", "bar")
+                .attr("x", d => waterXScale(d.time))
+                .attr("y", d => waterYScale(d.amount))
+                .attr("width", barWidth)
+                .attr("height", d => waterChartHeight - waterYScale(d.amount))
+                .style("fill", d => colorScale(d.amount));
+
+            // 更新阶段
+            bars.attr("x", d => waterXScale(d.time))
+                .attr("y", d => waterYScale(d.amount))
+                .attr("width", barWidth)
+                .attr("height", d => waterChartHeight - waterYScale(d.amount))
+                .style("fill", d => colorScale(d.amount)); // 根据 amount 动态更新颜色;
+
+            // 退出阶段
+            bars.exit().remove();
+
+            // 更新坐标轴
+            waterSvg.select(".x-axis").call(d3.axisBottom(waterXScale));
+            waterSvg.select(".y-axis").call(d3.axisLeft(waterYScale));
+        }
+
+        // 自动更新横轴范围
+        setInterval(() => {
+            const endTime = new Date();
+            const startTime = waterIntakeData[0]?.time || endTime;
+            waterXScale.domain([startTime, endTime]);
+            updateWaterIntakeChart();
+        }, 1000);
+
+
+
+
+
     </script>
 </body>
 </html>
