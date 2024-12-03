@@ -476,30 +476,37 @@
 
 
 
-            const timeSpan = endTime - startTime; // 当前时间跨度（以毫秒为单位）
-            let tickInterval;
 
+
+            // 初始化 `dynamicTicks`
+            let dynamicTicks = []; // 定义动态生成的 Ticks
+            // 动态调整 Y 轴 Tick
+            const timeSpan = endTime - startTime; // 当前时间跨度（以毫秒为单位）
             if (timeSpan <= 5 * 60 * 1000) { // 如果时间跨度 <= 5 分钟
-                tickInterval = d3.timeSecond.every(30); // 每 30 秒显示一个短线
+                dynamicTicks = d3.timeTicks(startTime, endTime, 3); 
+                console.log(dynamicTicks);
             } else { // 如果时间跨度 > 5 分钟
-                tickInterval = d3.timeMinute.every(1); // 每 1 分钟显示一个短线
+                dynamicTicks = d3.timeTicks(startTime, endTime, 6); 
             }
 
+            // 自定义 Tick 的时间点
+            const customTicks = [
+                recordingStartTime instanceof Date ? recordingStartTime : null, // 确保是 Date
+                ...(Array.isArray(waterIntakeData) ? waterIntakeData.map(d => d.time) : []), // 确保 map 返回数组
+                endTime instanceof Date ? endTime : null // 确保是 Date
+            ];
+            // const customTicks=[...(Array.isArray(waterIntakeData) ? waterIntakeData.map(d => d.time) : [])]
 
-            
+            // 合并 Tick 的时间点，并去重
+            const tickValues = Array.from(new Set([...dynamicTicks, ...customTicks]));
+
             // 更新坐标轴
             waterSvg.select(".x-axis").call(d3.axisTop(waterXScale)); // X 轴显示水量（放在顶部）
             waterSvg.select(".y-axis").call(
                 d3.axisLeft(waterYScale)
-                    .ticks(tickInterval) // 动态设置刻度间隔
+                    .tickValues(tickValues) // 自定义 Tick 时间点
                     .tickFormat(d3.timeFormat("%H:%M:%S")) // 格式化时间显示
             );
-
-
-
-            // 更新坐标轴
-            // waterSvg.select(".x-axis").call(d3.axisTop(waterXScale)); // X 轴显示水量（放在顶部）
-            // waterSvg.select(".y-axis").call(d3.axisLeft(waterYScale).tickFormat(d3.timeFormat("%H:%M:%S"))); // Y 轴显示时间
         }
 
         // 自动更新横轴范围
