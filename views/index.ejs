@@ -268,6 +268,9 @@
                         const amount = Math.floor(Math.random() * (500 - 10 + 1)) + 10;  // 统一设为 100ml
                         recordWaterIntake(stableStartTime, endTime, amount);
                         
+
+                        lastDrinkTime = currentTime; // 更新最后一次喝水时间
+                        stopBlinking(); // 停止屏幕闪烁提示
                         
                         resetBackgroundArea();
                     }
@@ -516,6 +519,104 @@
             waterYScale.domain([startTime, endTime]);
             updateWaterIntakeChart();
         }, 1000);
+
+
+
+
+
+
+
+
+
+
+
+
+        let lastDrinkTime = null; // 记录最后一次喝水时间
+        let blinkInterval = null; // 控制屏幕闪烁的定时器
+        let reminderInterval = null; // 喝水提醒的定时器
+        const blinkDuration = 500; // 闪烁间隔（毫秒）
+
+        function startBlinking() {
+            if (!blinkInterval) {
+                blinkInterval = setInterval(() => {
+                    document.body.style.backgroundColor =
+                        document.body.style.backgroundColor === "red" ? "white" : "red";
+                }, blinkDuration);
+            }
+        }
+
+        function stopBlinking() {
+            if (blinkInterval) {
+                clearInterval(blinkInterval);
+                blinkInterval = null;
+                document.body.style.backgroundColor = "white"; // 恢复正常背景色
+            }
+        }
+
+        function startWaterReminder() {
+            if (!reminderInterval) {
+                reminderInterval = setInterval(() => {
+                    const currentTime = Date.now();
+                    if (lastDrinkTime && currentTime - lastDrinkTime > 5000) { // 超过1分钟
+                        startBlinking();
+                    }
+                }, 1000);
+            }
+        }
+
+        function stopWaterReminder() {
+            if (reminderInterval) {
+                clearInterval(reminderInterval);
+                reminderInterval = null;
+                stopBlinking();
+            }
+        }
+
+        // 动态创建 "开始喝水提醒" 按钮
+        const startReminderButton = document.createElement("button");
+        startReminderButton.innerText = "开始喝水提醒";
+        startReminderButton.style.cssText = `
+            padding: 10px 20px;
+            font-size: 16px;
+            position: fixed;
+            top: 10px;
+            right: 110px;
+            z-index: 1000;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        `;
+        startReminderButton.onclick = () => {
+            lastDrinkTime = Date.now(); // 初始化最后一次喝水时间
+            startWaterReminder(); // 启动提醒
+        };
+        document.body.appendChild(startReminderButton);
+
+        // 动态创建 "停止喝水提醒" 按钮
+        const stopReminderButton = document.createElement("button");
+        stopReminderButton.innerText = "停止喝水提醒";
+        stopReminderButton.style.cssText = `
+            padding: 10px 20px;
+            font-size: 16px;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        `;
+        stopReminderButton.onclick = () => {
+            stopWaterReminder(); // 停止提醒
+        };
+        document.body.appendChild(stopReminderButton);
+
+
+
 
 
 
