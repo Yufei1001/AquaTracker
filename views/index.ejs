@@ -390,9 +390,38 @@
 
 
         let waterIntakeData = []; // 喝水数据
+        let isRecording = false; // 是否正在记录
+        let recordingStartTime = null; // 记录开始时间
+
+
+        // 添加按钮
+        const startButton = document.createElement("button");
+        startButton.innerText = "开始记录";
+        startButton.onclick = startRecording;
+        document.body.appendChild(startButton);
+
+        const stopButton = document.createElement("button");
+        stopButton.innerText = "结束记录";
+        stopButton.onclick = stopRecording;
+        document.body.appendChild(stopButton);
+
+        // 开始记录
+        function startRecording() {
+            isRecording = true;
+            recordingStartTime = new Date(); // 重置记录开始时间
+            waterIntakeData = []; // 清空之前的数据
+            console.log("开始记录喝水行为...");
+        }
+
+        // 结束记录
+        function stopRecording() {
+            isRecording = false;
+            console.log("结束记录喝水行为...");
+        }
 
         // 记录喝水行为数据
         function recordWaterIntake(startTime, endTime, amount) {
+            if (!isRecording) return; // 只有在记录状态下才记录数据
             const waterstartTime = new Date(); // 当前时间
             waterIntakeData.push({
                 time: waterstartTime,
@@ -406,7 +435,8 @@
         function updateWaterIntakeChart() {
             if (waterIntakeData.length === 0) return;
 
-            const startTime = waterIntakeData[0]?.time || new Date(); // 最早时间
+            // const startTime = waterIntakeData[0]?.time || new Date(); // 最早时间
+            const startTime = recordingStartTime || waterIntakeData[0]?.time || new Date();
             const endTime = new Date(); // 当前时间
             waterYScale.domain([startTime, endTime]); // 时间映射到 Y 轴
 
@@ -455,6 +485,8 @@
                 tickInterval = d3.timeMinute.every(1); // 每 1 分钟显示一个短线
             }
 
+
+            
             // 更新坐标轴
             waterSvg.select(".x-axis").call(d3.axisTop(waterXScale)); // X 轴显示水量（放在顶部）
             waterSvg.select(".y-axis").call(
