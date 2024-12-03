@@ -345,52 +345,55 @@
             });
         }
 
-        // 每秒获取一次数据
-        setInterval(getData, 100);
 
 
 
 
 
-        // 在 JavaScript 中为条形图设置时间轴（横轴）和水量轴（纵轴）的比例尺：
+
+        // 定义图表的边距和大小
         const waterChartMargin = { top: 20, right: 30, bottom: 40, left: 50 };
         const waterChartWidth = 600;
         const waterChartHeight = 300;
 
-        const waterXScale = d3.scaleTime()
+        // 定义比例尺
+        const waterXScale = d3.scaleLinear() // 水量比例尺（横向增长）
+            .domain([0, 500]) // 假设最大水量是 500ml
             .range([0, waterChartWidth]);
 
-        const waterYScale = d3.scaleLinear()
-            .domain([0, 500]) // 假设最大水量是 500ml
-            .range([waterChartHeight, 0]);
+        const waterYScale = d3.scaleTime() // 时间比例尺（从上到下时间递增）
+            .range([0, waterChartHeight]);
 
+        // 创建 SVG 容器
         const waterSvg = d3.select("#waterIntakeChart")
             .attr("width", waterChartWidth + waterChartMargin.left + waterChartMargin.right)
             .attr("height", waterChartHeight + waterChartMargin.top + waterChartMargin.bottom)
-        .append("g")
+            .append("g")
             .attr("transform", `translate(${waterChartMargin.left},${waterChartMargin.top})`);
 
+        // 添加坐标轴容器
         waterSvg.append("g")
             .attr("class", "x-axis")
-            .attr("transform", `translate(0,${waterChartHeight})`);
+            .attr("transform", `translate(0,0)`); // X 轴放置在顶部
 
         waterSvg.append("g")
             .attr("class", "y-axis");
 
+        // 添加 Y 轴标签
         waterSvg.append("text")
             .attr("class", "axis-label")
             .attr("x", -waterChartHeight / 2)
             .attr("y", -40)
             .attr("transform", "rotate(-90)")
-            .text("Water Intake (ml)");
+            .attr("text-anchor", "middle")
+            .text("Time");
 
 
-        let waterIntakeData = [];
-        let drinkingStartTime = null; // 记录喝水行为的开始时间
+        let waterIntakeData = []; // 喝水数据
 
         // 记录喝水行为数据
         function recordWaterIntake(startTime, endTime, amount) {
-            const waterstartTime = new Date(); // 每次调用生成当前时间
+            const waterstartTime = new Date(); // 当前时间
             waterIntakeData.push({
                 time: waterstartTime,
                 amount: amount
@@ -401,29 +404,23 @@
 
         // 更新条形图
         function updateWaterIntakeChart() {
-            const startTime = waterIntakeData[0]?.time || new Date();
-            const endTime = new Date();
-            waterXScale.domain([startTime, endTime]);
+            if (waterIntakeData.length === 0) return;
 
-            // 动态计算条形宽度
-            // const barWidth = Math.max(1, (waterChartWidth / waterIntakeData.length) - 2);
+            const startTime = waterIntakeData[0]?.time || new Date(); // 最早时间
+            const endTime = new Date(); // 当前时间
+            waterYScale.domain([startTime, endTime]); // 时间映射到 Y 轴
 
+            // 动态计算条形高度
             const padding = 2; // 条形间距
-            const maxBarWidth = 5; // 设置条形的最大宽度
-            const barWidth = Math.min(maxBarWidth, Math.max(1, (waterChartWidth / waterIntakeData.length) - padding));
+            const maxBarHeight = 2; // 最大条形高度
+            const barHeight = Math.min(maxBarHeight, Math.max(1, (waterChartHeight / waterIntakeData.length) - padding));
 
             // 定义颜色比例尺
             const colorScale = d3.scaleLinear()
                 .domain([0, 500]) // 假设水量范围是 0 到 500 ml
                 .range(["#d0e7ff", "#003f88"]); // 从浅蓝到深蓝
 
-
             // 绑定数据
-            // 用于将你的数据数组 waterIntakeData 和 SVG 图形元素建立一一对应关系，并通过键函数 d => d.time 确保每条数据的唯一性。
-            // waterIntakeData = [
-            //     { time: "2024-12-02T10:00:00", amount: 100 },
-            //     { time: "2024-12-02T10:05:00", amount: 150 }
-            // ];
             const bars = waterSvg.selectAll(".bar")
                 .data(waterIntakeData, d => d.time);
 
@@ -431,37 +428,60 @@
             bars.enter()
                 .append("rect")
                 .attr("class", "bar")
-                .attr("x", d => waterXScale(d.time))
-                .attr("y", d => waterYScale(d.amount))
-                .attr("width", barWidth)
-                .attr("height", d => waterChartHeight - waterYScale(d.amount))
+                .attr("x", 0) // 条形从左侧开始
+                .attr("y", d => waterYScale(d.time)) // 根据时间决定条形的 Y 坐标
+                .attr("width", d => waterXScale(d.amount)) // 条形宽度由水量决定
+                .attr("height", barHeight) // 条形高度固定或动态计算
                 .style("fill", d => colorScale(d.amount));
 
             // 更新阶段
-            bars.attr("x", d => waterXScale(d.time))
-                .attr("y", d => waterYScale(d.amount))
-                .attr("width", barWidth)
-                .attr("height", d => waterChartHeight - waterYScale(d.amount))
-                .style("fill", d => colorScale(d.amount)); // 根据 amount 动态更新颜色;
+            bars.attr("x", 0)
+                .attr("y", d => waterYScale(d.time))
+                .attr("width", d => waterXScale(d.amount))
+                .attr("height", barHeight)
+                .style("fill", d => colorScale(d.amount));
 
             // 退出阶段
             bars.exit().remove();
 
+
+
+            const timeSpan = endTime - startTime; // 当前时间跨度（以毫秒为单位）
+            let tickInterval;
+
+            if (timeSpan <= 5 * 60 * 1000) { // 如果时间跨度 <= 5 分钟
+                tickInterval = d3.timeSecond.every(30); // 每 30 秒显示一个短线
+            } else { // 如果时间跨度 > 5 分钟
+                tickInterval = d3.timeMinute.every(1); // 每 1 分钟显示一个短线
+            }
+
             // 更新坐标轴
-            waterSvg.select(".x-axis").call(d3.axisBottom(waterXScale));
-            waterSvg.select(".y-axis").call(d3.axisLeft(waterYScale));
+            waterSvg.select(".x-axis").call(d3.axisTop(waterXScale)); // X 轴显示水量（放在顶部）
+            waterSvg.select(".y-axis").call(
+                d3.axisLeft(waterYScale)
+                    .ticks(tickInterval) // 动态设置刻度间隔
+                    .tickFormat(d3.timeFormat("%H:%M:%S")) // 格式化时间显示
+            );
+
+
+
+            // 更新坐标轴
+            // waterSvg.select(".x-axis").call(d3.axisTop(waterXScale)); // X 轴显示水量（放在顶部）
+            // waterSvg.select(".y-axis").call(d3.axisLeft(waterYScale).tickFormat(d3.timeFormat("%H:%M:%S"))); // Y 轴显示时间
         }
 
         // 自动更新横轴范围
         setInterval(() => {
             const endTime = new Date();
             const startTime = waterIntakeData[0]?.time || endTime;
-            waterXScale.domain([startTime, endTime]);
+            waterYScale.domain([startTime, endTime]);
             updateWaterIntakeChart();
         }, 1000);
 
 
 
+        // 每秒获取一次数据
+        setInterval(getData, 100);
 
 
     </script>
