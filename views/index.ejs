@@ -68,6 +68,7 @@
         let accelerationData = { x: [], y: [], z: [] };
         let gyroscopeData = { x: [], y: [], z: [] };
         let angleData = [];
+        const unoDataArray = [];
 
         // 创建 x 和 y 轴的比例尺
         const xScale = d3.scaleLinear().domain([0, 50]).range([0, width]);
@@ -356,9 +357,22 @@
                 updateChart(gyroscopeData, paths.gyroscope, gyroscopeSvg, yScaleGyroscope);
                 updateAngleChart(angleData, paths.angle, angleSvg, yScaleAngle);
 
+
+
                 // 处理 UNO 数据（如果需要）
                 const unoData = dataResponse.unoData;
                 console.log('UNO Data:', unoData); // 可以根据需求显示在页面或处理
+
+                // 更新 UNO 数据数组
+                unoDataArray.push(unoData);
+
+                // 如果数组长度超过 100，移除最早的数据
+                if (unoDataArray.length > 100) {
+                    unoDataArray.shift();
+                }
+
+                // 打印完整的 UNO 数据数组（可选）
+                console.log('All UNO Data:', unoDataArray);
             })
             .catch(error => {
                 console.error('Error fetching data:', error);
@@ -585,12 +599,16 @@
             // 延迟 5 秒后执行更新为实际数据
             setTimeout(() => {
                 console.log("Updating to actual data after 5 seconds.");
+                
+                const unoDataArrayNumbers = unoDataArray.map(Number).filter(val => !isNaN(val)); // 转换为数字并过滤无效数据
+                const averageValue = unoDataArrayNumbers.reduce((sum, val) => sum + val, 0) / unoDataArrayNumbers.length || 0;
+
 
                 // 修改为实际数据
                 waterIntakeData.pop(); // 移除虚拟数据
                 waterIntakeData.push({
                     time: waterstartTime,
-                    amount: amount // 实际数据
+                    amount: averageValue // 实际数据
                 });
 
                 currentWaterAmount += amount; // 更新当前喝水量

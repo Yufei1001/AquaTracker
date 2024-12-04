@@ -28,7 +28,15 @@ const parser = unoPort.pipe(new ReadlineParser({ delimiter: '\r\n' }));
 
 // 监听数据
 parser.on('data', (data) => {
-    console.log('Data from Uno:', data);
+    // console.log('Data from Uno:', data);
+    // 提取 "weight: " 后的数值
+    const line = data.toString().trim();
+    console.log('Data from Uno:', line);
+    if (line.startsWith('weight:')) {
+        const weight = line.replace('weight:', '').trim();
+        
+        unoData=weight;
+    }
 });
 
 // 错误处理
@@ -80,11 +88,6 @@ app.get('/', (req, res) => {
     res.render('index');
 });
 
-// app.post('/data', (req, res) => {
-//     res.writeHead(200, { 'Content-Type': 'application/json' });
-//     res.end(JSON.stringify({ sensorValues: sensorValues }));
-// });
-
 // 向 Arduino 发送命令的函数
 function sendCommand(command) {
     return new Promise((resolve, reject) => {
@@ -117,6 +120,13 @@ app.post('/send-command', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error });
     }
+});
+
+app.get('/data', (req, res) => {
+    res.json({
+        unoData: unoData || "No UNO data yet",
+        bleSensorValues: bleSensorValues || [NaN, NaN, NaN, NaN, NaN, NaN],
+    });
 });
 
 
