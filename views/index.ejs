@@ -304,14 +304,15 @@
         // 获取传感器数据的函数
         function getData() {
             fetch(SERVERADDRESS, {
-                method: 'POST',
+                method: 'GET', // 改为 GET 请求
                 headers: {
                     'Content-Type': 'application/json'
                 }
             })
             .then(response => response.json())
             .then(dataResponse => {
-                const sensorValues = dataResponse.sensorValues;
+                // 提取 BLE 数据
+                const sensorValues = dataResponse.bleSensorValues;
                 document.getElementById('sensorValues').innerText = sensorValues.join(", ");
 
                 // 更新加速度数据
@@ -333,7 +334,7 @@
                 gyroscopeData.x.push(sensorValues[3]);
                 gyroscopeData.y.push(sensorValues[4]);
                 gyroscopeData.z.push(sensorValues[5]);
-                
+
                 // 计算新的角度值
                 const ax = sensorValues[0];
                 const ay = sensorValues[1];
@@ -348,17 +349,22 @@
                 }
                 angleData.push(calculatedAngle);
                 detectDrinkingBehavior(calculatedAngle, currentIndex);
-                currentIndex = Math.min(currentIndex + 1, 49)
+                currentIndex = Math.min(currentIndex + 1, 49);
 
                 // 更新折线图
                 updateChart(accelerationData, paths.acceleration, accelerationSvg, yScaleAcceleration);
                 updateChart(gyroscopeData, paths.gyroscope, gyroscopeSvg, yScaleGyroscope);
                 updateAngleChart(angleData, paths.angle, angleSvg, yScaleAngle);
+
+                // 处理 UNO 数据（如果需要）
+                const unoData = dataResponse.unoData;
+                console.log('UNO Data:', unoData); // 可以根据需求显示在页面或处理
             })
             .catch(error => {
                 console.error('Error fetching data:', error);
             });
         }
+
 
 
 
