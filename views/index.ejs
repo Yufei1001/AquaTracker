@@ -277,7 +277,7 @@
                                         // 记录喝水行为
                         
                         const endTime = currentTime;
-                        const amount = Math.floor(Math.random() * (500 - 10 + 1)) + 10;  // 统一设为 100ml
+                        const amount = Math.floor(Math.random() * (40 - 20 + 1)) + 20;  
                         recordWaterIntake(stableStartTime, endTime, amount);
                         
 
@@ -373,7 +373,7 @@
 
         // 定义比例尺
         const waterXScale = d3.scaleLinear() // 水量比例尺（横向增长）
-            .domain([0, 500]) // 假设最大水量是 500ml
+            .domain([0, 50]) // 假设最大水量是 500ml
             .range([0, waterChartWidth]);
 
         const waterYScale = d3.scaleTime() // 时间比例尺（从上到下时间递增）
@@ -458,10 +458,10 @@
         stopButton.onclick = () => {
             stopRecording(); // 原有功能：停止记录
             isRecording = false; // 停止喝水记录状态
-            alert(`喝水记录已停止！总喝水量为 ${currentWaterAmount}ml，占目标的 ${Math.min(
+            alert(`Stop recording. The total water intake is ${currentWaterAmount}ml, ${Math.min(
                 (currentWaterAmount / targetWaterAmount) * 100,
                 100
-            ).toFixed(2)}%。`);
+            ).toFixed(2)}% of the goal.`);
         };
         document.body.appendChild(stopButton);
 
@@ -534,18 +534,68 @@
         let isRecording = false; // 是否正在记录
         let recordingStartTime = null; // 记录开始时间
         // 记录喝水行为数据
+        // function recordWaterIntake(startTime, endTime, amount) {
+        //     if (!isRecording) return; // 只有在记录状态下才记录数据
+        //     const waterstartTime = new Date(); // 当前时间
+        //     waterIntakeData.push({
+        //         time: waterstartTime,
+        //         amount: 10
+        //     });
+            
+        //     // console.log(`Recorded drinking: ${amount}ml at ${new Date(waterstartTime).toLocaleTimeString()}`);
+        //     updateWaterIntakeChart();
+        //     waterIntakeData.pop();
+        //     waterIntakeData.push({
+        //         time: waterstartTime,
+        //         amount: amount
+        //     });
+        //     currentWaterAmount += amount; // 更新当前喝水量
+
+        //     // 延迟 5 秒后更新饼图
+        //     setTimeout(() => {
+        //         currentWaterAmount += amount; // 更新当前喝水量
+        //         updateWaterIntakeChart();
+        //         updateWaterChart(); // 更新饼图
+        //         console.log("Water chart updated after 5 seconds delay.");
+        //     }, 5000); // 延迟 5000 毫秒
+        //     // updateWaterChart(); // 更新饼图
+        // }
+
+
         function recordWaterIntake(startTime, endTime, amount) {
             if (!isRecording) return; // 只有在记录状态下才记录数据
+
             const waterstartTime = new Date(); // 当前时间
+
+            // 添加初始虚拟数据
             waterIntakeData.push({
                 time: waterstartTime,
-                amount: amount
+                amount: 10
             });
-            console.log(`Recorded drinking: ${amount}ml at ${new Date(waterstartTime).toLocaleTimeString()}`);
-            updateWaterIntakeChart();
-            currentWaterAmount += amount; // 更新当前喝水量
-            updateWaterChart(); // 更新饼图
+
+            console.log("Executing updateWaterIntakeChart() - First call.");
+            updateWaterIntakeChart(); // 第一次立即更新
+
+            // 延迟 5 秒后执行更新为实际数据
+            setTimeout(() => {
+                console.log("Updating to actual data after 5 seconds.");
+
+                // 修改为实际数据
+                waterIntakeData.pop(); // 移除虚拟数据
+                waterIntakeData.push({
+                    time: waterstartTime,
+                    amount: amount // 实际数据
+                });
+
+                currentWaterAmount += amount; // 更新当前喝水量
+
+                // 更新图表
+                updateWaterIntakeChart(); // 第二次更新水量图表
+                updateWaterChart(); // 更新饼图
+                console.log("Water intake chart and water chart updated to actual data.");
+            }, 5000); // 延迟 5 秒
         }
+
 
         // 更新条形图
         function updateWaterIntakeChart() {
@@ -563,7 +613,7 @@
 
             // 定义颜色比例尺
             const colorScale = d3.scaleLinear()
-                .domain([0, 500]) // 假设水量范围是 0 到 500 ml
+                .domain([0, 50]) // 假设水量范围是 0 到 500 ml
                 .range(["#d0e7ff", "#003f88"]); // 从浅蓝到深蓝
 
             // 绑定数据
@@ -643,7 +693,7 @@
         let lastDrinkTime = null; // 记录最后一次喝水时间
         let blinkInterval = null; // 控制屏幕闪烁的定时器
         let reminderInterval = null; // 喝水提醒的定时器
-        const blinkDuration = 500; // 闪烁间隔（毫秒）
+        const blinkDuration = 600; // 闪烁间隔（毫秒）
 
         function startBlinking() {
             if (!blinkInterval) {
