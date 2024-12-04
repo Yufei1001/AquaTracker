@@ -297,7 +297,9 @@
                         drinkduration=(currentTime-stableStartTime)/1000.0;
                         const endTime = currentTime;
                         // const amount = Math.floor(Math.random() * (40 - 20 + 1)) + 20;  
+
                         const amount = mapDrinkDurationToVolume(drinkduration);
+                        console.log("intake: ", amount);
                         recordWaterIntake(stableStartTime, endTime, amount);
                         
 
