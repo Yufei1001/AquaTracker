@@ -35,11 +35,11 @@
     </style>
 </head>
 <body>
-    <h1 style="text-align:center">IMU Visualization</h1>
-    <div style="text-align:center">Current Sensor Values: <span id="sensorValues">Loading...</span></div>
+    <h1 style="text-align:center">AquaTrack</h1>
+    <!-- <div style="text-align:center">Current Sensor Values: <span id="sensorValues">Loading...</span></div> -->
+    <div style="text-align:center; display:none;">Current Sensor Values: <span id="sensorValues">Loading...</span></div>
 
     <div style="text-align:center">
-        Current Sensor Values: <span id="sensorValues">Loading...</span><br>
         Calculated Angle (Arc Cotangent): <span id="calculatedAngle">Loading...</span>
     </div>
     
@@ -50,8 +50,8 @@
     </div>
 
 
-    <svg id="accelerationChart"></svg>
-    <svg id="gyroscopeChart"></svg>
+    <!-- <svg id="accelerationChart"></svg>
+    <svg id="gyroscopeChart"></svg> -->
     <svg id="angleChart"></svg>
     <svg id="waterIntakeChart"></svg>
 
@@ -412,14 +412,14 @@
 
         // 按钮 开始记录时间戳和喝水量
         const startButton = document.createElement("button");
-        startButton.innerText = "开始记录";
+        startButton.innerText = "Start Recording";
         startButton.style.cssText = `
             padding: 10px 20px;
             font-size: 16px;
             margin-right: 10px;
             position: fixed;
             top: 10px;
-            left: 110px;
+            left: 180px;
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -428,7 +428,7 @@
         `;
         startButton.onclick = () => {
             startRecording(); // 原有功能：开始记录
-            targetWaterAmount = parseInt(prompt("请输入目标喝水量（单位：ml）："), 10);
+            targetWaterAmount = parseInt(prompt("Please input your water intake GOAL："), 10);
             if (isNaN(targetWaterAmount) || targetWaterAmount <= 0) {
                 alert("请输入一个有效的目标量！");
                 return;
@@ -441,7 +441,7 @@
         document.body.appendChild(startButton);
 
         const stopButton = document.createElement("button");
-        stopButton.innerText = "结束记录";
+        stopButton.innerText = "Stop Recording";
         stopButton.style.cssText = `
             padding: 10px 20px;
             font-size: 16px;
@@ -496,10 +496,10 @@
             waterChart = new Chart(ctx, {
                 type: "doughnut",
                 data: {
-                    labels: ["已喝水量", "剩余量"],
+                    labels: ["Remaining Water", "Water Left to Goal"],
                     datasets: [
                         {
-                            label: "喝水进度",
+                            label: "Drinking Progress",
                             data: [currentWaterAmount, targetWaterAmount - currentWaterAmount],
                             backgroundColor: ["#4CAF50", "#E0E0E0"],
                             borderWidth: 1,
@@ -683,13 +683,13 @@
 
         // 动态创建 "开始喝水提醒" 按钮
         const startReminderButton = document.createElement("button");
-        startReminderButton.innerText = "开始喝水提醒";
+        startReminderButton.innerText = "Start reminding";
         startReminderButton.style.cssText = `
             padding: 10px 20px;
             font-size: 16px;
             position: fixed;
             top: 10px;
-            right: 110px;
+            right: 180px;
             z-index: 1000;
             background-color: #4CAF50;
             color: white;
@@ -705,7 +705,7 @@
 
         // 动态创建 "停止喝水提醒" 按钮
         const stopReminderButton = document.createElement("button");
-        stopReminderButton.innerText = "停止喝水提醒";
+        stopReminderButton.innerText = "Stop reminding";
         stopReminderButton.style.cssText = `
             padding: 10px 20px;
             font-size: 16px;
