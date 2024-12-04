@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>IMU Sensor Visualization</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- 引入 Chart.js -->
     <style>
         .line {
             fill: none;
@@ -26,6 +27,11 @@
             width: 100%;
             height: 100%;
         }
+        #waterIntakeChartContainer {
+            margin: 20px auto;
+            width: 400px;
+            height: 400px;
+        }
     </style>
 </head>
 <body>
@@ -37,6 +43,12 @@
         Calculated Angle (Arc Cotangent): <span id="calculatedAngle">Loading...</span>
     </div>
     
+
+    <!-- 新增饼图 -->
+    <div id="waterIntakeChartContainer">
+        <canvas id="waterChart"></canvas>
+    </div>
+
 
     <svg id="accelerationChart"></svg>
     <svg id="gyroscopeChart"></svg>
@@ -392,20 +404,65 @@
             .text("Time");
 
 
-        let waterIntakeData = []; // 喝水数据
-        let isRecording = false; // 是否正在记录
-        let recordingStartTime = null; // 记录开始时间
 
 
-        // 添加按钮
+
+
+
+
+        // 按钮 开始记录时间戳和喝水量
         const startButton = document.createElement("button");
         startButton.innerText = "开始记录";
-        startButton.onclick = startRecording;
+        startButton.style.cssText = `
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-right: 10px;
+            position: fixed;
+            top: 10px;
+            left: 110px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        `;
+        startButton.onclick = () => {
+            startRecording(); // 原有功能：开始记录
+            targetWaterAmount = parseInt(prompt("请输入目标喝水量（单位：ml）："), 10);
+            if (isNaN(targetWaterAmount) || targetWaterAmount <= 0) {
+                alert("请输入一个有效的目标量！");
+                return;
+            }
+            currentWaterAmount = 0; // 重置当前喝水量
+            isRecording = true; // 开启记录状态
+            initializeWaterChart(); // 初始化饼图
+            console.log(`目标喝水量设置为 ${targetWaterAmount}ml`);
+        };
         document.body.appendChild(startButton);
 
         const stopButton = document.createElement("button");
         stopButton.innerText = "结束记录";
-        stopButton.onclick = stopRecording;
+        stopButton.style.cssText = `
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-right: 10px;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        `;
+        stopButton.onclick = () => {
+            stopRecording(); // 原有功能：停止记录
+            isRecording = false; // 停止喝水记录状态
+            alert(`喝水记录已停止！总喝水量为 ${currentWaterAmount}ml，占目标的 ${Math.min(
+                (currentWaterAmount / targetWaterAmount) * 100,
+                100
+            ).toFixed(2)}%。`);
+        };
         document.body.appendChild(stopButton);
 
         // 开始记录
@@ -422,6 +479,60 @@
             console.log("结束记录喝水行为...");
         }
 
+
+
+
+
+
+        // 喝水量记录----------------------------------------------------------------------------------------------
+        let targetWaterAmount = 0; // 用户输入的目标喝水量（ml）
+        let currentWaterAmount = 0; // 当前累计的喝水量（ml）
+        // let isRecording = false; // 是否正在记录
+        let waterChart = null; // 饼图实例
+
+        // 初始化饼图
+        function initializeWaterChart() {
+            const ctx = document.getElementById("waterChart").getContext("2d");
+            waterChart = new Chart(ctx, {
+                type: "doughnut",
+                data: {
+                    labels: ["已喝水量", "剩余量"],
+                    datasets: [
+                        {
+                            label: "喝水进度",
+                            data: [currentWaterAmount, targetWaterAmount - currentWaterAmount],
+                            backgroundColor: ["#4CAF50", "#E0E0E0"],
+                            borderWidth: 1,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                },
+            });
+        }
+
+        // 更新饼图
+        function updateWaterChart() {
+            if (waterChart) {
+                waterChart.data.datasets[0].data = [
+                    currentWaterAmount,
+                    Math.max(targetWaterAmount - currentWaterAmount, 0),
+                ];
+                waterChart.update();
+            }
+        }
+
+
+
+
+
+
+        // 喝水时间戳加喝水量----------------------------------------------------------------------------------------------
+        let waterIntakeData = []; // 喝水数据
+        let isRecording = false; // 是否正在记录
+        let recordingStartTime = null; // 记录开始时间
         // 记录喝水行为数据
         function recordWaterIntake(startTime, endTime, amount) {
             if (!isRecording) return; // 只有在记录状态下才记录数据
@@ -432,6 +543,8 @@
             });
             console.log(`Recorded drinking: ${amount}ml at ${new Date(waterstartTime).toLocaleTimeString()}`);
             updateWaterIntakeChart();
+            currentWaterAmount += amount; // 更新当前喝水量
+            updateWaterChart(); // 更新饼图
         }
 
         // 更新条形图
@@ -476,10 +589,6 @@
 
             // 退出阶段
             bars.exit().remove();
-
-
-
-
 
             // 初始化 `dynamicTicks`
             let dynamicTicks = []; // 定义动态生成的 Ticks
@@ -530,7 +639,7 @@
 
 
 
-
+        // 喝水提醒----------------------------------------------------------------------------------------------
         let lastDrinkTime = null; // 记录最后一次喝水时间
         let blinkInterval = null; // 控制屏幕闪烁的定时器
         let reminderInterval = null; // 喝水提醒的定时器
@@ -614,7 +723,6 @@
             stopWaterReminder(); // 停止提醒
         };
         document.body.appendChild(stopReminderButton);
-
 
 
 
