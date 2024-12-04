@@ -212,14 +212,28 @@
 
 
 
+        function mapDrinkDurationToVolume(duration) {
+            // 配置映射范围（可以根据实际数据调整）
+            const minDuration = 1.5; // 最短喝水时间（秒）
+            const maxDuration = 10.0; // 最长喝水时间（秒）
+            const minVolume = 20; // 最小喝水量（ml）
+            const maxVolume = 300; // 最大喝水量（ml）
 
+            // 限制 duration 在有效范围内
+            const clampedDuration = Math.max(minDuration, Math.min(duration, maxDuration));
+
+            // 线性映射公式
+            const drinkVolume = minVolume + (clampedDuration - minDuration) * (maxVolume - minVolume) / (maxDuration - minDuration);
+
+            return drinkVolume;
+        }
         
         function detectDrinkingBehavior(angle, currentIndex) {
             const currentTime = Date.now();
 
             switch (currentState) {
                 case "initial":
-                    if (angle > -70 && angle < -40) {   // 范围尽量宽一些，不能错过
+                    if (angle > -70 && angle < -1) {   // 范围尽量宽一些，不能错过
                         currentState = "start tilting";
                         // console.log("start tilting");
                     }
@@ -227,14 +241,15 @@
 
                 case "start tilting":
                     // if (angle >= -60 && angle < -10) {      // 慢慢地变到更小的角度，再开始计时
-                    if (angle >= -60 && angle < -50) { 
+                    if (angle >= -75 && angle < -50) { 
                         currentState = "start tilting";
                         // stableStartTime = currentIndex;
                         // console.log("start tilting ----->");
                     }
-                    if (angle >= -50 && angle < -1) {
+                    if (angle >= -50 && angle <= 20) {
                         currentState = "keep tilting";
-                        stableStartTime = currentIndex;
+                        stableStartTime = currentTime;
+                        stableStartIndex = currentIndex;                        
                         // console.log("keep tilting");
                     }
                     else {
@@ -244,12 +259,15 @@
                     break;
 
                 case "keep tilting":
-                    if (angle > -50 && angle < -1) {
+                    if (angle >= -50 && angle <= 20) {
+                        stableStartIndex = Math.max(stableStartIndex - 1, 0);
                         if (currentTime - stableStartTime > stableDurationThreshold) {
+                            // console.log("stablestarttime: ", stableStartTime);
+                            // console.log("currenttime:", currentTime)
                             // console.log("Detected drinking behavior!");
                             currentState="drink";
                             // drinkStartIndex = currentIndex;
-                            drinkStartIndex = stableStartTime;
+                            drinkStartIndex = stableStartIndex;
                         }
                     } else {
                         currentState = "initial";
@@ -260,7 +278,7 @@
                     break;
                 
                 case "drink":
-                    if (angle > -50 && angle < -1) {
+                    if (angle >= -50 && angle <= 20) {
                         currentState="drink";
                         // console.log("Continue drinking!");
                         drinkStartIndex = Math.max(drinkStartIndex - 1, 0);
@@ -275,9 +293,11 @@
                         currentState = "initial";
                         // console.log("stop drinking, back to -----initial-----");
                                         // 记录喝水行为
-                        
+                        console.log("drink duration: ", (currentTime-stableStartTime)/1000.0);
+                        drinkduration=(currentTime-stableStartTime)/1000.0;
                         const endTime = currentTime;
-                        const amount = Math.floor(Math.random() * (40 - 20 + 1)) + 20;  
+                        // const amount = Math.floor(Math.random() * (40 - 20 + 1)) + 20;  
+                        const amount = mapDrinkDurationToVolume(drinkduration);
                         recordWaterIntake(stableStartTime, endTime, amount);
                         
 
@@ -373,7 +393,7 @@
 
         // 定义比例尺
         const waterXScale = d3.scaleLinear() // 水量比例尺（横向增长）
-            .domain([0, 50]) // 假设最大水量是 500ml
+            .domain([0,300]) // 假设最大水量是 500ml
             .range([0, waterChartWidth]);
 
         const waterYScale = d3.scaleTime() // 时间比例尺（从上到下时间递增）
@@ -613,7 +633,7 @@
 
             // 定义颜色比例尺
             const colorScale = d3.scaleLinear()
-                .domain([0, 50]) // 假设水量范围是 0 到 500 ml
+                .domain([0, 300]) // 假设水量范围是 0 到 500 ml
                 .range(["#d0e7ff", "#003f88"]); // 从浅蓝到深蓝
 
             // 绑定数据
